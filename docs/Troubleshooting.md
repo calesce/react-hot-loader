@@ -17,22 +17,6 @@ If you don't see some of the messages, or some of the requests, or if some of th
 
 ### Can't Build
 
-#### Cannot resolve 'file' or 'directory' `react/lib/ReactMount`
-
-If you're using a precompiled React instead of `react` npm package, React Hot Loader configuration will need a few tweaks. See [Usage with External React](https://github.com/gaearon/react-hot-loader/blob/master/docs/README.md#usage-with-external-react).
-
-Make sure you have `'.js'` in `resolve.extensions` section of Webpack config, or Webpack won't be able to find any JS files without explicitly specifying extension in `require`.
-
-#### SyntaxError: 'import' and 'export' may only appear at the top level
-
-If you're using React Hot Loader together with [Babel](https://babeljs.io/) (ex 6to5), make sure React Hot Loader stays **to the left** of Babel in `loaders` array in Webpack config:
-
-```js
-  { test: /\.jsx?$/, loaders: ['react-hot', 'babel'], include: path.join(__dirname, 'src') }
-```
-
-Webpack applies `loaders` right to left, and we need to feed Babel's *output* to React Hot Loader, not vice versa.
-
 #### Error: Invalid path './' (or similar)
 
 If you're using a relative output path in your Webpack config, wrap it in a call to `path.resolve()`:
@@ -50,10 +34,6 @@ module.exports = {
 ```
 
 If you used WebpackDevServer CLI mode and after switching to Node it crashes with `Error: Invalid path ''`, you probably didn't have `path` specified in `output` at all. You can just put `path: __dirname` there, as it won't matter for development config.
-
-### Module not found: Error: Cannot resolve module 'react-hot' 
-
-Most likely you used `npm link` to use a development version of a package in a different folder, and React Hot Loader processed it by mistake. You should use [`include` in loader configuration](https://github.com/gaearon/react-hot-boilerplate/blob/master/webpack.config.js#L27) to only opt-in your app's files to processing.
 
 ---------
 
@@ -100,8 +80,6 @@ If you get this warning **together with a 404 for `hot-update.json` file**, you'
 
 #### I see “[WDS] Hot Module Replacement enabled” but nothing happens when I edit `App.js`
 
-If you're running Node 0.11.13, you might want to try updating to 0.12. Some people reported this helped solve this problem. Also **make sure that your `require`s have the same filename casing as the files.** Having `App.js` and doing `require('app')` might trip the watcher on some systems.
-
 OS X also has a rarely-occuring bug that causes some folders to get 'broken' with regards to file system change monitoring. Here are some suggested [fixes](http://feedback.livereload.com/knowledgebase/articles/86239).
 
 #### I see “[HMR] Nothing hot updated.” and nothing happens when I edit `App.js`
@@ -145,34 +123,29 @@ Normally you want it to be `'/'` if you're serving scripts from root, something 
 
 ### Misc
 
-#### It's slowing down my build!
+#### React Hot Loader code is included in my production build
 
-Make sure you have `include` limited to your app's modules in loader configuration [just like on this line](https://github.com/gaearon/react-hot-boilerplate/blob/fbdbd93956241320bc3960d350c4dd0030cc6e84/webpack.config.js#L27). You never need to process `node_modules` with React Hot Loader.
+Make sure you have separate configs for development and production. You don't need `react-hot-loader/babel` in your Babel config, or `react-hot-loader/webpack` in your Webpack config.
 
-#### My bundle is so large!
+Be sure you invoke Webpack with a `NODE_ENV=production` environment variable. [cross-env]() is a great tool to do this in a way that works on Windows:
 
-Make sure you have separate configs for development and production. You don't need `react-hot` in `loaders` or `webpack-dev-server/client` or `webpack/hot/only-dev-server` in production config. They are only for development. For easier maintenance, you can set an environment variable before invoking Webpack and read it in config.
+```sh
+cross-env webpack --config webpack.config.prod.js
+```
 
-Also make sure you have these plugins in production config:
+Also make sure you have `webpack.DefinePlugin` in production config. It removes a lot of code that's only needed in development in React, and removes almost all of React Hot Loader:
 
 ```js
-// removes a lot of debugging code in React
 new webpack.DefinePlugin({
   'process.env': {
     'NODE_ENV': JSON.stringify('production')
   }
-}),
-// keeps hashes consistent between compilations
-new webpack.optimize.OccurenceOrderPlugin(),
-// minifies your code
-new webpack.optimize.UglifyJsPlugin({
-  compressor: {
-    warnings: false
-  }
 })
 ```
 
-Oh, and don't forget to remove `devtool: 'eval'` from a production config. Otherwise Uglify won't uglify anything at all.
+#### It's slowing down my build!
+
+Make sure you have `include` limited to your app's modules in loader configuration [just like on this line](https://github.com/gaearon/react-hot-boilerplate/blob/fbdbd93956241320bc3960d350c4dd0030cc6e84/webpack.config.js#L27). You never need to process `node_modules` with React Hot Loader.
 
 #### I can access my Single Page App (SPA) only via `/` on refresh
 
